@@ -1,0 +1,3 @@
+motor.c:10:19:motor_init	32	static
+motor.c:19:10:motor_run	24	static
+motor.c:35:6:motor_brake	16	static

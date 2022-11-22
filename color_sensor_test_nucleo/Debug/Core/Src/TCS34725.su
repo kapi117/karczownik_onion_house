@@ -1,0 +1,6 @@
+TCS34725.c:13:6:TCS34725_init	16	static
+TCS34725.c:17:19:readReg	40	static
+TCS34725.c:22:19:readRegword	40	static
+TCS34725.c:27:19:writeReg	40	static
+TCS34725.c:32:19:lock	16	static
+TCS34725.c:41:19:unlock	16	static
