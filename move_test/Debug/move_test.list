@@ -211,8 +211,8 @@ int main(void)
  80002b6:	f000 f8b9 	bl	800042c <MX_TIM1_Init>
   /* USER CODE BEGIN 2 */
   HAL_StatusTypeDef status = motor_init(&left_motor, &htim1, LEFT_MOTOR_CHANNEL_A, LEFT_MOTOR_CHANNEL_B);
- 80002ba:	2304      	movs	r3, #4
- 80002bc:	2200      	movs	r2, #0
+ 80002ba:	2308      	movs	r3, #8
+ 80002bc:	220c      	movs	r2, #12
  80002be:	4927      	ldr	r1, [pc, #156]	; (800035c <main+0xbc>)
  80002c0:	4827      	ldr	r0, [pc, #156]	; (8000360 <main+0xc0>)
  80002c2:	f000 fa02 	bl	80006ca <motor_init>
@@ -225,8 +225,8 @@ int main(void)
  80002d0:	f003 fd5e 	bl	8003d90 <iprintf>
 
   status = motor_init(&right_motor, &htim1, RIGHT_MOTOR_CHANNEL_A, RIGHT_MOTOR_CHANNEL_B);
- 80002d4:	230c      	movs	r3, #12
- 80002d6:	2208      	movs	r2, #8
+ 80002d4:	2300      	movs	r3, #0
+ 80002d6:	2204      	movs	r2, #4
  80002d8:	4920      	ldr	r1, [pc, #128]	; (800035c <main+0xbc>)
  80002da:	4823      	ldr	r0, [pc, #140]	; (8000368 <main+0xc8>)
  80002dc:	f000 f9f5 	bl	80006ca <motor_init>

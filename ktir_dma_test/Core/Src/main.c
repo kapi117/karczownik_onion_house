@@ -32,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define NUMBER_OF_SENSORS 2
+#define NUMBER_OF_SENSORS 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -74,11 +74,11 @@ int __io_putchar(int ch)
 
   return 1;
 }
-/*
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	conversion_complete = 1;
-}*/
+}
 
 /* USER CODE END 0 */
 
@@ -125,15 +125,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(HAL_GetTick() - tick > 400){
+	  if(HAL_GetTick() - tick > 2000){
 		  HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ktir_results, NUMBER_OF_SENSORS);
-		  /*ile (conversion_complete == 0){
+		  while (conversion_complete == 0){
 			  printf(".");
 		  }
-		  conversion_complete = 0;*/
+		  conversion_complete = 0;
 		  printf("\n");
 
-		  printf("Result 1: %d\tResult 2: %d\n", ktir_results[0], ktir_results[1]);
+		  printf("Result 1: %d\tResult 2: %d\tResult 3: %d\n", ktir_results[0], ktir_results[1], ktir_results[2]);
 		  tick = HAL_GetTick();
 		  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
 	  }
@@ -214,7 +214,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 3;
   hadc1.Init.DMAContinuousRequests = DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
@@ -246,6 +246,14 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
