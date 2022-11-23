@@ -77,13 +77,21 @@ typedef enum
   TCS34725_GAIN_60X               = 0x03    ///<  60x gain
 }eGain_t;
 
-void TCS34725_init(I2C_HandleTypeDef *hi2c);
+typedef struct {
+	I2C_HandleTypeDef* _hi2c;
+}ColorSensor;
 
-HAL_StatusTypeDef readReg(uint8_t reg, uint8_t* value);
-HAL_StatusTypeDef readRegword(uint8_t reg, uint16_t* value);
-HAL_StatusTypeDef writeReg(uint8_t reg, uint8_t value);
+void TCS34725_init(ColorSensor *color_sensor, I2C_HandleTypeDef *hi2c);
 
-HAL_StatusTypeDef lock();
-HAL_StatusTypeDef unlock();
+HAL_StatusTypeDef readReg(ColorSensor *color_sensor, uint8_t reg, uint8_t* value);
+HAL_StatusTypeDef readRegword(ColorSensor *color_sensor, uint8_t reg, uint16_t* value);
+HAL_StatusTypeDef writeReg(ColorSensor *color_sensor, uint8_t reg, uint8_t value);
+HAL_StatusTypeDef get_red(ColorSensor *color_sensor, uint16_t* value);
+HAL_StatusTypeDef get_green(ColorSensor *color_sensor, uint16_t* value);
+HAL_StatusTypeDef get_blue(ColorSensor *color_sensor, uint16_t* value);
+HAL_StatusTypeDef get_light(ColorSensor *color_sensor, uint16_t* value);
+
+HAL_StatusTypeDef lock(ColorSensor *color_sensor);
+HAL_StatusTypeDef unlock(ColorSensor *color_sensor);
 
 #endif /* INC_TCS34725_H_ */
