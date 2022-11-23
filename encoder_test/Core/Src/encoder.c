@@ -10,6 +10,7 @@
 
 void ENCODER_init(Encoder* encoder, TIM_HandleTypeDef* htim){
 	encoder->htim = htim;
+	HAL_TIM_Encoder_Start(htim, TIM_CHANNEL_ALL);
 }
 uint16_t ENCODER_get_value(Encoder* encoder){
 	encoder->last_value = encoder->htim->Instance->CNT;
