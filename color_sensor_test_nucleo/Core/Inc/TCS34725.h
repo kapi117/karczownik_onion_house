@@ -5,6 +5,21 @@
  *      Author: Hyperbook
  */
 
+/**
+ * USTAWIENIA W KONFIGURACJI SPRZĘTOWEJ:
+ * - Connectivity > I2C > I2C
+ * - Clock Speed 100 000 HZ
+ * - 7 bit, reszta Disabled
+ *
+ * USAGE:
+ * 	ColorSensor color_sensor;
+ * 	TCS34725_init(&color_sensor, &hi2c);
+ * 	unlock(&color_sensor);
+ * 	uint16_t red = 0;
+ * 	get_red(&color_sensor, &red);
+ * 	lock(&color_sensor);
+ */
+
 #ifndef INC_TCS34725_H_
 #define INC_TCS34725_H_
 

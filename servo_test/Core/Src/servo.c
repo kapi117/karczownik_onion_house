@@ -7,19 +7,17 @@
 
 #include "servo.h"
 
-TIM_HandleTypeDef *pwm_tim;
-uint32_t pwm_channel;
 
-void servo_init(TIM_HandleTypeDef *tim, uint32_t channel)
+void servo_init(Servo* servo, TIM_HandleTypeDef *tim, uint32_t channel)
 {
-	pwm_tim = tim;
-	pwm_channel = channel;
+	servo->_pwm_tim = tim;
+	servo->_pwm_channel = channel;
 
-	__HAL_TIM_SET_COMPARE(pwm_tim, pwm_channel, SERVO_MAX_US);
-	HAL_TIM_PWM_Start(pwm_tim, pwm_channel);
+	__HAL_TIM_SET_COMPARE(servo->_pwm_tim, servo->_pwm_channel, SERVO_MAX_US);
+	HAL_TIM_PWM_Start(servo->_pwm_tim, servo->_pwm_channel);
 }
 
-uint32_t servo_set_angle(uint8_t angle)
+uint32_t servo_set_angle(Servo* servo, uint8_t angle)
 {
 	if(angle < SERVO_MIN_ANGLE)
 		angle = SERVO_MIN_ANGLE;
@@ -30,7 +28,7 @@ uint32_t servo_set_angle(uint8_t angle)
 
 	pwm_duty_us = SERVO_MIN_US + (angle * (SERVO_MAX_US - SERVO_MIN_US))/SERVO_MAX_ANGLE;
 
-	__HAL_TIM_SET_COMPARE(pwm_tim, pwm_channel, pwm_duty_us);
+	__HAL_TIM_SET_COMPARE(servo->_pwm_tim, servo->_pwm_channel, pwm_duty_us);
 
 	return pwm_duty_us;
 }

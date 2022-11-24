@@ -5,6 +5,21 @@
  *      Author: Hyperbook
  */
 
+/**
+ * USTAWIENIA W KONFIGURACJI SPRZĘTOWEJ:
+ * - TIMERS > PWM Generation Output (x4)
+ * - Prescaler [częstotliwość CLK / 10 - 1]
+ * - Counter [1000 - 1]
+ *
+ * USAGE:
+ *
+	#define LEFT_MOTOR_CHANNEL_A TIM_CHANNEL_4
+	#define LEFT_MOTOR_CHANNEL_B TIM_CHANNEL_3
+	Motor left_motor;
+	motor_init(&left_motor, &htim1, LEFT_MOTOR_CHANNEL_A, LEFT_MOTOR_CHANNEL_B);
+	motor_run(&left_motor, 10);
+ */
+
 #ifndef INC_MOTOR_H_
 #define INC_MOTOR_H_
 
