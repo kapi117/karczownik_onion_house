@@ -53,6 +53,7 @@
 
 #define COLOR_LEFT_I2C hi2c1
 #define COLOR_RIGHT_I2C hi2c2
+#define COLOR_EMPTY_CRITICAL 600
 
 #define KTIR_ADC hadc1
 /* USER CODE END PD */
@@ -81,6 +82,8 @@ Servo left_servo, right_servo;
 Motor left_motor, right_motor;
 
 ColorSensor left_color, right_color;
+
+Encoder left_encoder, right_encoder;
 
 volatile uint16_t ktir_results[NUMBER_OF_SENSORS];
 
@@ -113,6 +116,7 @@ void turn_slight(Motor* slower, Motor* faster);
 void turn(Motor* slower, Motor* faster, uint8_t value);
 void go_straight(Motor* left, Motor* right);
 void show_for_calibration();
+void show_color_for_calibration(ColorSensor* sensor);
 
 /* USER CODE END PFP */
 
@@ -172,24 +176,61 @@ int main(void)
   motor_init(&right_motor, &MOTOR_RIGHT_TIMER, MOTOR_RIGHT_CHANNEL_A, MOTOR_RIGHT_CHANNEL_B);
   motor_init(&left_motor, &MOTOR_LEFT_TIMER, MOTOR_LEFT_CHANNEL_A, MOTOR_LEFT_CHANNEL_B);
 
-  // TCS34725_init(&left_color, &COLOR_LEFT_I2C);
-  // TCS34725_init(&right_color, &COLOR_RIGHT_I2C);
+  ENCODER_init(&left_encoder, &htim3);
+
+  ENCODER_init(&right_encoder, &htim4);
+
+  TCS34725_init(&left_color, &COLOR_LEFT_I2C);
+  TCS34725_init(&right_color, &COLOR_RIGHT_I2C);
 
   KTIR_Init(&KTIR_ADC, ktir_results);
   //uint8_t position = 20;
   //int8_t count = 1;
 
-  //uint32_t tick_open_gates = 0;
-  //uint8_t opened_gates = 0;
+  uint32_t tick_open_gates = 0;
+  uint8_t opened_gates = 0;
 
   int8_t left = 0;
+  //ENCODER_get_value(&left_encoder);
+  //ENCODER_get_value(&right_encoder);
+
+  servo_set_angle(&right_servo, 20);
+
+  servo_set_angle(&left_servo, 160);
 
   /* USER CODE END 2 */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
 	KTIR_read();
+	printf("-----\nPrawy\n");
+	show_color_for_calibration(&right_color);
+	printf("Lewy\n");
+	show_color_for_calibration(&left_color);
+
+	if ((is_red_onion(&left_color) || is_red_onion(&right_color)) && opened_gates == 0){
+		servo_set_angle(&right_servo, 0);
+		servo_set_angle(&left_servo, 180);
+		opened_gates = 1;
+		tick_open_gates = HAL_GetTick();
+	} else {
+		uint16_t right = 0, left = 0;
+		get_light(&right_color, &right);
+		get_light(&left_color, &left);
+		if((right > COLOR_EMPTY_CRITICAL || left > COLOR_EMPTY_CRITICAL) && opened_gates == 0){
+			servo_set_angle(&right_servo, 130);
+			servo_set_angle(&left_servo, 40);
+			opened_gates = 2;
+		} else if (opened_gates && HAL_GetTick() - tick_open_gates > 2000){
+
+			  servo_set_angle(&right_servo, 20);
+
+			  servo_set_angle(&left_servo, 160);
+			  opened_gates = 0;
+		}
+	}
 	//show_for_calibration();
 	/*
 	servo_set_angle(&right_servo, position);
@@ -223,7 +264,7 @@ int main(void)
 	if (opened_gates || HAL_GetTick() - tick_open_gates >= 3000) {
 		opened
 	}*/
-	HAL_Delay(5);
+	HAL_Delay(300);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -567,20 +608,20 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 100-1;
+  htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 20000-1;
+  htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 10;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
+  sConfig.IC1Filter = 15;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 10;
+  sConfig.IC2Filter = 15;
   if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -684,34 +725,38 @@ uint16_t get_H_from_RGB(uint32_t red, uint32_t green, uint32_t blue){
 	uint16_t c_max = red > green ? (red > blue ? red : blue) : (green > blue ? green : blue);
 	uint16_t c_min = red < green ? (red < blue ? red : blue) : (green < blue ? green : blue);
 
-	uint16_t d = c_max - c_min;
+	float d = (float)(c_max - c_min);
+	d /= 255.0;
 	uint16_t h = 0;
+	float r = red/255.0;
+	float g = green/255.0;
+	float b = blue/255.0;
 	if (d == 0){
 	  h = 0;
 	}
 	else if(c_max == red){
-	  h = (60*(green - blue)/d + 360)%360;
+	  h = (int)(60*(g - b)/d + 360)%360;
 	}
 	else if(c_max == green){
-	  h = (60*(blue - red)/d) + 120;
+	  h = (60*(b - r)/d) + 120;
 	}
 	else {
-	  h = (60*(red - green)/d) + 240;
+	  h = (60*(r - g)/d) + 240;
 	}
 	return h;
 }
 
 uint8_t is_red_onion(ColorSensor *sensor){
 	uint16_t red = 0;
-	unlock(&right_color);
-	get_red(&right_color, &red);
+	unlock(sensor);
+	get_red(sensor, &red);
 	uint16_t color = 0;
-	get_light(&right_color, &color);
+	get_light(sensor, &color);
 	uint16_t green = 0;
-	get_green(&right_color, &green);
+	get_green(sensor, &green);
 	uint16_t blue = 0;
-	get_blue(&right_color, &blue);
-	lock(&right_color);
+	get_blue(sensor, &blue);
+	lock(sensor);
 
 	uint16_t h = get_H_from_RGB(red, green, blue);
 
@@ -753,6 +798,22 @@ void go_straight(Motor* left, Motor* right){
 void turn(Motor* slower, Motor* faster, uint8_t value){
 	motor_run(slower, MOTOR_BASE_SPEED + value);
 	motor_run(faster, MOTOR_BASE_SPEED - value);
+}
+
+void show_color_for_calibration(ColorSensor* sensor){
+	uint16_t red = 0;
+		unlock(sensor);
+		get_red(sensor, &red);
+		uint16_t color = 0;
+		get_light(sensor, &color);
+		uint16_t green = 0;
+		get_green(sensor, &green);
+		uint16_t blue = 0;
+		get_blue(sensor, &blue);
+		lock(sensor);
+		uint16_t h = get_H_from_RGB(red, green, blue);
+		printf("R: %d\tG: %d\tB: %d\tC: %d \t H = %d\n", red, green, blue, color, h);
+
 }
 
 /* USER CODE END 4 */
