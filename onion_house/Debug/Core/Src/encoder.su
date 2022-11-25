@@ -1,0 +1,3 @@
+encoder.c:11:6:ENCODER_init	16	static
+encoder.c:15:10:ENCODER_get_value	16	static
+encoder.c:19:8:ENCODER_get_change	24	static

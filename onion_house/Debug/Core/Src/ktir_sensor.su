@@ -1,0 +1,3 @@
+ktir_sensor.c:14:6:HAL_ADC_ConvCpltCallback	16	static
+ktir_sensor.c:19:6:KTIR_Init	16	static
+ktir_sensor.c:24:6:KTIR_read	8	static

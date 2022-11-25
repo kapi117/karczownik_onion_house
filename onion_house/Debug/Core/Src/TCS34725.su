@@ -1,0 +1,10 @@
+TCS34725.c:11:6:TCS34725_init	24	static
+TCS34725.c:32:19:readReg	48	static
+TCS34725.c:37:19:readRegword	48	static
+TCS34725.c:42:19:writeReg	40	static
+TCS34725.c:47:19:get_red	24	static
+TCS34725.c:52:19:get_green	24	static
+TCS34725.c:57:19:get_blue	24	static
+TCS34725.c:62:19:get_light	24	static
+TCS34725.c:67:19:lock	24	static
+TCS34725.c:76:19:unlock	24	static
