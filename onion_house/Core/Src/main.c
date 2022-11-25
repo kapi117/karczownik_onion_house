@@ -98,6 +98,19 @@ const uint16_t KTIR_CRITICAL_VALUES[NUMBER_OF_SENSORS] = 	{
 uint32_t tick_open_gates = 0;
 uint8_t opened_gates = 0;
 
+int8_t MOTOR_SPEED = MOTOR_BASE_SPEED;
+
+uint8_t crossings = 0;
+uint8_t now_crossing = 0;
+
+uint8_t turns = 0;
+
+uint8_t rotating = 0;
+uint32_t tick_start_rotating = 0;
+uint8_t STOP = 1;
+
+uint8_t side_length = 6;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -194,15 +207,12 @@ int main(void)
   //uint8_t position = 180;
   //int8_t count = 1;
 
-  uint8_t rotating = 0;
-  uint32_t tick_start_rotating;
-  uint8_t STOP = 1;
   //ENCODER_get_value(&left_encoder);
   //ENCODER_get_value(&right_encoder);
 
-  servo_set_angle(&right_servo, 70);
+  servo_set_angle(&right_servo, 60);
 
-  servo_set_angle(&left_servo, 110);
+  servo_set_angle(&left_servo, 100);
 
   /* USER CODE END 2 */
 
@@ -240,30 +250,50 @@ int main(void)
 		//servo_set_angle(&right_servo, 180);
 
 		//servo_set_angle(&left_servo, 0);
+		if (turns < 6){
+			if(!rotating){
+				follow_the_line();
+			}
+			// Jeśli wykryje skryżowanie to sprawdź czas
+			if(is_crossing() && !now_crossing){
+				/*rotating = 1;
+				tick_start_rotating = HAL_GetTick();*/
+				crossings += 1;
+				now_crossing = 1;
+			} else if (!is_crossing()){
+				now_crossing = 0;
+			}
 
-		if(!rotating){
+			if(crossings == side_length){
+				rotating = 1;
+				tick_start_rotating = HAL_GetTick();
+				if(side_length >= 3) side_length = 1;
+				else side_length = 3;
+				crossings = 0;
+			}
+
+			//Po upływie pewnego czasu zacznij skręcać
+			if(rotating && HAL_GetTick() - tick_start_rotating > 200){
+				motor_run(&right_motor, MOTOR_SPEED-20);
+				motor_run(&left_motor, -MOTOR_SPEED-15);
+			}
+			//Jeśli wrócisz na linie to zakończ skręcanie
+			if(!is_black(ktir_results[0], KTIR_CRITICAL_VALUES[0]) && is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1])
+					&& is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2]) && !is_black(ktir_results[3], KTIR_CRITICAL_VALUES[3]) && rotating){
+				//turn(&left_motor, &right_motor, 5);
+				rotating = 0;
+				turns += 1;
+				//motor_brake(&right_motor);
+				//motor_brake(&left_motor);
+			}
+		}
+		else {
 			follow_the_line();
 		}
-		// Jeśli wykryje skryżowanie to sprawdź czas
-		if(is_crossing()){
-			rotating = 1;
-			tick_start_rotating = HAL_GetTick();
-		}
-		//Po upływie pewnego czasu zacznij skręcać
-		if(rotating && HAL_GetTick() - tick_start_rotating > 200){
-			motor_run(&right_motor, MOTOR_BASE_SPEED-20);
-			motor_run(&left_motor, -MOTOR_BASE_SPEED-35);
-		}
-		//Jeśli wrócisz na linie to zakończ skręcanie
-		if(!is_black(ktir_results[0], KTIR_CRITICAL_VALUES[0]) && is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1])
-				&& is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2]) && !is_black(ktir_results[3], KTIR_CRITICAL_VALUES[3]) && rotating){
-			//turn(&left_motor, &right_motor, 5);
-			rotating = 0;
-			//motor_brake(&right_motor);
-			//motor_brake(&left_motor);
-		}
 
-		open_close_gates();
+
+
+		//open_close_gates();
 	/*
 		servo_set_angle(&right_servo, position);
 
@@ -858,6 +888,7 @@ void open_close_gates(){
 			servo_set_angle(&left_servo, 180);
 			opened_gates = 1;
 			tick_open_gates = HAL_GetTick();
+			MOTOR_SPEED = MOTOR_BASE_SPEED + 10;
 		} else {
 			uint16_t right = 0, left = 0;
 			get_light(&right_color, &right);
@@ -869,23 +900,35 @@ void open_close_gates(){
 				tick_open_gates = HAL_GetTick();
 			} else if (opened_gates && HAL_GetTick() - tick_open_gates > 2000){
 
-				  servo_set_angle(&right_servo, 70);
+				  servo_set_angle(&right_servo, 60);
+				  MOTOR_SPEED = MOTOR_BASE_SPEED;
 
-				  servo_set_angle(&left_servo, 110);
+				  servo_set_angle(&left_servo, 100);
 				  opened_gates = 0;
 			}
 		}
 }
 
 void follow_the_line(){
-	if(is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
+	if(turns < 6 && is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
 		go_straight(MOTOR_BASE_SPEED);
 	}
-	if(!is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
-		turn(&left_motor, &right_motor, 7);
+	else if(!is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
+		if(!is_black(ktir_results[3], KTIR_CRITICAL_VALUES[3])){
+			turn(&left_motor, &right_motor, 7);
+		} else {
+			turn(&left_motor, &right_motor, 13);
+		}
 	}
-	if(is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && !is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
-		turn(&right_motor, &left_motor, 7);
+	else if(is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && !is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
+		if(!is_black(ktir_results[0], KTIR_CRITICAL_VALUES[0])){
+			turn(&right_motor, &left_motor, 7);
+		} else {
+			turn(&right_motor, &left_motor, 13);
+		}
+	}
+	else if (turns == 6){
+		go_straight(MOTOR_BASE_SPEED);
 	}
 }
 
