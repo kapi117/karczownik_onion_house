@@ -41,11 +41,20 @@
 #define SERVO_LEFT_CHANNEL TIM_CHANNEL_4
 #define SERVO_LEFT_TIMER htim3
 
+#define SERVO_RIGHT_START_POSITION 60
+#define SERVO_LEFT_START_POSITION 100
+#define SERVO_RIGHT_OUT_POSITION 170 //wyrzuca przedmiot
+#define SERVO_LEFT_OUT_POSITION 10
+#define SERVO_RIGHT_IN_POSITION 0 //wpuszcza przedmiot
+#define SERVO_LEFT_IN_POSITION 180
+
+#define CROSSING_DELAY 200 //czas po jakim od wykrycia skrzyżowania zaczynam skręcać
+
 #define MOTOR_RIGHT_CHANNEL_A TIM_CHANNEL_3
 #define MOTOR_RIGHT_CHANNEL_B TIM_CHANNEL_4
 #define MOTOR_RIGHT_TIMER htim1
 
-#define MOTOR_BASE_SPEED 45
+#define MOTOR_BASE_SPEED 45 //prędkość silnika podstawowa <0; 100>
 
 #define MOTOR_LEFT_CHANNEL_A TIM_CHANNEL_2
 #define MOTOR_LEFT_CHANNEL_B TIM_CHANNEL_1
@@ -53,7 +62,7 @@
 
 #define COLOR_LEFT_I2C hi2c1
 #define COLOR_RIGHT_I2C hi2c2
-#define COLOR_EMPTY_CRITICAL 600
+#define COLOR_EMPTY_CRITICAL 600 // wartość koloru (funkcja get_light() przy której uznajemy że mamy coś przed sobą (w celu wyrzucenia)
 
 #define KTIR_ADC hadc1
 /* USER CODE END PD */
@@ -210,9 +219,9 @@ int main(void)
   //ENCODER_get_value(&left_encoder);
   //ENCODER_get_value(&right_encoder);
 
-  servo_set_angle(&right_servo, 60);
+  servo_set_angle(&right_servo, SERVO_RIGHT_START_POSITION);
 
-  servo_set_angle(&left_servo, 100);
+  servo_set_angle(&left_servo, SERVO_LEFT_START_POSITION);
 
   /* USER CODE END 2 */
 
@@ -246,10 +255,6 @@ int main(void)
 
 
 	if(!STOP){
-
-		//servo_set_angle(&right_servo, 180);
-
-		//servo_set_angle(&left_servo, 0);
 		if (turns < 6){
 			if(!rotating){
 				follow_the_line();
@@ -263,7 +268,7 @@ int main(void)
 			} else if (!is_crossing()){
 				now_crossing = 0;
 			}
-
+			// JEŚLI SKRZYŻOWAŃ TYLE ILE POWINNO BYC W DANYM KIERUNKU
 			if(crossings == side_length){
 				rotating = 1;
 				tick_start_rotating = HAL_GetTick();
@@ -273,11 +278,15 @@ int main(void)
 			}
 
 			//Po upływie pewnego czasu zacznij skręcać
-			if(rotating && HAL_GetTick() - tick_start_rotating > 200){
+			//TODO sprawdzić jaki crossing_delay ustawić
+			if(rotating && HAL_GetTick() - tick_start_rotating > CROSSING_DELAY){
+				// TODO dostosować wartości do zakretów
 				motor_run(&right_motor, MOTOR_SPEED-20);
 				motor_run(&left_motor, -MOTOR_SPEED-15);
 			}
+
 			//Jeśli wrócisz na linie to zakończ skręcanie
+			//TODO przemyśleć czy może lepiej ustawić od czasu/encodera
 			if(!is_black(ktir_results[0], KTIR_CRITICAL_VALUES[0]) && is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1])
 					&& is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2]) && !is_black(ktir_results[3], KTIR_CRITICAL_VALUES[3]) && rotating){
 				//turn(&left_motor, &right_motor, 5);
@@ -293,7 +302,7 @@ int main(void)
 
 
 
-		//open_close_gates();
+		open_close_gates();
 	/*
 		servo_set_angle(&right_servo, position);
 
@@ -884,8 +893,8 @@ void show_color_for_calibration(ColorSensor* sensor){
 
 void open_close_gates(){
 	if ((is_red_onion(&left_color) || is_red_onion(&right_color)) && opened_gates == 0){
-			servo_set_angle(&right_servo, 0);
-			servo_set_angle(&left_servo, 180);
+			servo_set_angle(&right_servo, SERVO_RIGHT_IN_POSITION);
+			servo_set_angle(&left_servo, SERVO_LEFT_IN_POSITION);
 			opened_gates = 1;
 			tick_open_gates = HAL_GetTick();
 			MOTOR_SPEED = MOTOR_BASE_SPEED + 10;
@@ -893,33 +902,40 @@ void open_close_gates(){
 			uint16_t right = 0, left = 0;
 			get_light(&right_color, &right);
 			get_light(&left_color, &left);
+			// SPRAWDZAM JASNOSC DZIEKI CZEMU WIEM CZY COS JEST PRZY BRAMCE
 			if((right > COLOR_EMPTY_CRITICAL || left > COLOR_EMPTY_CRITICAL) && opened_gates == 0){
-				servo_set_angle(&right_servo, 170);
-				servo_set_angle(&left_servo, 10);
+				servo_set_angle(&right_servo, SERVO_RIGHT_OUT_POSITION);
+				servo_set_angle(&left_servo, SERVO_LEFT_OUT_POSITION);
 				opened_gates = 2;
 				tick_open_gates = HAL_GetTick();
 			} else if (opened_gates && HAL_GetTick() - tick_open_gates > 2000){
 
-				  servo_set_angle(&right_servo, 60);
+				  servo_set_angle(&right_servo, SERVO_RIGHT_START_POSITION);
 				  MOTOR_SPEED = MOTOR_BASE_SPEED;
 
-				  servo_set_angle(&left_servo, 100);
+				  servo_set_angle(&left_servo, SERVO_LEFT_START_POSITION);
 				  opened_gates = 0;
 			}
 		}
 }
 
 void follow_the_line(){
-	if(turns < 6 && is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
-		go_straight(MOTOR_BASE_SPEED);
+	if(is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
+		go_straight(MOTOR_SPEED);
 	}
+	// jeśli srodkowy prawy nie jest nad linia a srodkowy lewy jest to skrec w lewo
 	else if(!is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
 		if(!is_black(ktir_results[3], KTIR_CRITICAL_VALUES[3])){
+			//jesli nie skrajny lewy nad linią (czyli nie wyjechaliśmy za mocno) to turn o mniejszą wartość
 			turn(&left_motor, &right_motor, 7);
+			//skret w lewo
 		} else {
+			// skrajny jest nad linią, wiec odjechalismy troche mocniej, wiec skrec troche mocniej
+			// TODO dostosować wartości
 			turn(&left_motor, &right_motor, 13);
 		}
 	}
+	// to samo tylko skrecamy w prawo
 	else if(is_black(ktir_results[1], KTIR_CRITICAL_VALUES[1]) && !is_black(ktir_results[2], KTIR_CRITICAL_VALUES[2])){
 		if(!is_black(ktir_results[0], KTIR_CRITICAL_VALUES[0])){
 			turn(&right_motor, &left_motor, 7);
@@ -927,8 +943,10 @@ void follow_the_line(){
 			turn(&right_motor, &left_motor, 13);
 		}
 	}
+	// TODO warunek na np. tylko skrajne zeby jeszcze mocniej skrecic
+	// TODO wszystkie białe (jeśli turns 6 wszystkie białe to może jesteśmy pomiędzy bazą)
 	else if (turns == 6){
-		go_straight(MOTOR_BASE_SPEED);
+		go_straight(MOTOR_SPEED);
 	}
 }
 
