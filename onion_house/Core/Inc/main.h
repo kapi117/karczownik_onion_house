@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define B1_Pin GPIO_PIN_13
+#define B1_GPIO_Port GPIOC
 #define KTIR_1_Pin GPIO_PIN_0
 #define KTIR_1_GPIO_Port GPIOA
 #define KTIR_2_Pin GPIO_PIN_1
@@ -69,6 +71,10 @@ void Error_Handler(void);
 #define KTIR_3_GPIO_Port GPIOA
 #define KTIR_4_Pin GPIO_PIN_7
 #define KTIR_4_GPIO_Port GPIOA
+#define SERVO_RIGHT_Pin GPIO_PIN_0
+#define SERVO_RIGHT_GPIO_Port GPIOB
+#define SERVO_LEFT_Pin GPIO_PIN_1
+#define SERVO_LEFT_GPIO_Port GPIOB
 #define COLOR_RIGHT_SCL_Pin GPIO_PIN_10
 #define COLOR_RIGHT_SCL_GPIO_Port GPIOB
 #define MOTOR_LEFT_A_Pin GPIO_PIN_8
@@ -81,6 +87,10 @@ void Error_Handler(void);
 #define MOTOR_RIGHT_B_GPIO_Port GPIOA
 #define COLOR_RIGHT_SDA_Pin GPIO_PIN_3
 #define COLOR_RIGHT_SDA_GPIO_Port GPIOB
+#define ENCODER_RIGHT_1_Pin GPIO_PIN_6
+#define ENCODER_RIGHT_1_GPIO_Port GPIOB
+#define ENCODER_RIGHT_2_Pin GPIO_PIN_7
+#define ENCODER_RIGHT_2_GPIO_Port GPIOB
 #define COLOR_LEFT_SCL_Pin GPIO_PIN_8
 #define COLOR_LEFT_SCL_GPIO_Port GPIOB
 #define COLOR_LEFT_SDA_Pin GPIO_PIN_9
